@@ -1,83 +1,144 @@
-document.addEventListener('keydown', async (e) => {
-    if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      const searchBox = document.createElement('div');
-      searchBox.style.position = 'fixed';
-      searchBox.style.top = '10%';
-      searchBox.style.left = '50%';
-      searchBox.style.transform = 'translateX(-50%)';
-      searchBox.style.zIndex = '9999';
-      searchBox.style.background = '#fff';
-      searchBox.style.padding = '10px';
-      searchBox.style.borderRadius = '8px';
-      searchBox.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
-      searchBox.innerHTML = `
-        <input type="text" id="subtitleSearch" placeholder="Search subtitles..." style="width: 300px; padding: 8px; font-size: 16px;">
-        <div id="results" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
-      `;
-      document.body.appendChild(searchBox);
-  
-      const input = searchBox.querySelector('#subtitleSearch');
-      const resultsDiv = searchBox.querySelector('#results');
-  
-      input.addEventListener('input', async (e) => {
-        const query = e.target.value.toLowerCase();
-        if (!query) {
-          resultsDiv.innerHTML = '';
-          return;
-        }
-  
-        const captions = await fetchSubtitles();
-        if (!captions) {
-          resultsDiv.innerHTML = '<p>No subtitles found.</p>';
-          return;
-        }
-  
-        const matches = captions.filter((item) => item.text.toLowerCase().includes(query));
-        resultsDiv.innerHTML = matches
-          .map(
-            (match) => `
-            <div style="cursor: pointer; margin: 5px 0; padding: 5px; border-bottom: 1px solid #ccc;" data-timestamp="${match.start}">
-              ${formatTimestamp(match.start)} - ${match.text}
-            </div>`
-          )
-          .join('');
-  
-        resultsDiv.querySelectorAll('div[data-timestamp]').forEach((div) =>
-          div.addEventListener('click', (e) => {
-            const timestamp = e.currentTarget.getAttribute('data-timestamp');
-            navigateToTimestamp(timestamp);
-          })
-        );
-      });
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        // Check if the search box already exists
+        let existingBox = document.getElementById('subtitleSearchBox');
+        if (existingBox) return;
+
+        // Create search box
+        const searchBox = document.createElement('input');
+        searchBox.type = 'text';
+        searchBox.id = 'subtitleSearchBox';
+        searchBox.placeholder = 'Type keyword to search subtitles...';
+        searchBox.style.position = 'fixed';
+        searchBox.style.top = '10%';
+        searchBox.style.left = '50%';
+        searchBox.style.transform = 'translateX(-50%)';
+        searchBox.style.padding = '10px';
+        searchBox.style.zIndex = '10000';
+        searchBox.style.width = '300px';
+        searchBox.style.border = '1px solid #ccc';
+        searchBox.style.borderRadius = '4px';
+        searchBox.style.background = '#fff';
+
+        document.body.appendChild(searchBox);
+
+        // Focus on the input
+        searchBox.focus();
+
+        // Listen for input or "Enter" key
+        searchBox.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                const query = searchBox.value.trim();
+                if (query) {
+                    const results = await searchSubtitles(query);
+                    displayResults(results);
+                }
+            }
+        });
     }
-  });
-  
-  async function fetchSubtitles() {
-    const videoId = new URLSearchParams(window.location.search).get('v');
-    const response = await fetch(`https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`);
-    if (!response.ok) return null;
-  
-    const text = await response.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'application/xml');
-    const texts = Array.from(xml.getElementsByTagName('text'));
-  
-    return texts.map((node) => ({
-      start: parseFloat(node.getAttribute('start')),
-      text: node.textContent,
-    }));
-  }
-  
-  function navigateToTimestamp(timestamp) {
-    const video = document.querySelector('video');
-    video.currentTime = timestamp;
-    video.play();
-  }
-  
-  function formatTimestamp(seconds) {
+});
+
+async function fetchSubtitles() {
+    try {
+        const videoData = JSON.parse(
+            document.querySelector('script#player').innerHTML.match(/var ytInitialPlayerResponse = (.+?);<\/script>/)[1]
+        );
+
+        const captionTracks = videoData.captions.playerCaptionsTracklistRenderer.captionTracks;
+        if (!captionTracks || captionTracks.length === 0) {
+            alert('No subtitles available for this video.');
+            return null;
+        }
+
+        const subtitleUrl = captionTracks[0].baseUrl; // Use the first subtitle track
+        const response = await fetch(subtitleUrl);
+        const subtitles = await response.text();
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(subtitles, 'text/xml');
+        const texts = Array.from(xmlDoc.getElementsByTagName('text')).map((node) => ({
+            start: node.getAttribute('start'),
+            duration: node.getAttribute('dur'),
+            text: node.textContent,
+        }));
+
+        return texts;
+    } catch (error) {
+        console.error('Error fetching subtitles:', error);
+        alert('Unable to fetch subtitles.');
+        return null;
+    }
+}
+
+async function searchSubtitles(keyword) {
+    const subtitles = await fetchSubtitles();
+    if (!subtitles) return [];
+
+    const results = subtitles.filter((sub) => sub.text.toLowerCase().includes(keyword.toLowerCase()));
+    return results;
+}
+
+function displayResults(results) {
+    // Remove existing results if any
+    let existingResults = document.getElementById('subtitleResults');
+    if (existingResults) existingResults.remove();
+
+    // Create a results container
+    const resultContainer = document.createElement('div');
+    resultContainer.id = 'subtitleResults';
+    resultContainer.style.position = 'fixed';
+    resultContainer.style.top = '20%';
+    resultContainer.style.left = '50%';
+    resultContainer.style.transform = 'translateX(-50%)';
+    resultContainer.style.background = '#fff';
+    resultContainer.style.border = '1px solid #ccc';
+    resultContainer.style.padding = '10px';
+    resultContainer.style.zIndex = '10000';
+    resultContainer.style.width = '300px';
+    resultContainer.style.maxHeight = '300px';
+    resultContainer.style.overflowY = 'scroll';
+
+    if (results.length === 0) {
+        resultContainer.innerHTML = 'No matches found.';
+    } else {
+        results.forEach((result) => {
+            const resultItem = document.createElement('div');
+            resultItem.textContent = `${formatTimestamp(result.start)}: ${result.text}`;
+            resultItem.style.cursor = 'pointer';
+            resultItem.style.padding = '5px 0';
+            resultItem.style.borderBottom = '1px solid #eee';
+
+            // Click to navigate to timestamp
+            resultItem.addEventListener('click', () => {
+                const videoPlayer = document.querySelector('video');
+                videoPlayer.currentTime = parseFloat(result.start);
+            });
+
+            resultContainer.appendChild(resultItem);
+        });
+    }
+
+    document.body.appendChild(resultContainer);
+}
+
+// Choose one format based on your needs:
+function formatTimestamp(seconds) {
+    // For videos under 1 hour, use MM:SS format
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
     return `${minutes}:${secs}`;
-  }
-  
+    
+    // Uncomment below for HH:MM:SS format if needed
+    /*
+    const date = new Date(0);
+    date.setSeconds(parseFloat(seconds));
+    return date.toISOString().substr(11, 8);
+    */
+}
+
+function navigateToTimestamp(timestamp) {
+    const video = document.querySelector('video');
+    video.currentTime = timestamp;
+    video.play();
+}
