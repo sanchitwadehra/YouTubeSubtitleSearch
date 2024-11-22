@@ -1,9 +1,39 @@
 let isSearchBoxVisible = false;
+let isResultsVisible = false;
+let currentSelectedIndex = -1;
 
 document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         toggleSearchBox();
+        // Also hide results when search box is hidden
+        if (!isSearchBoxVisible) {
+            const results = document.getElementById('subtitleResults');
+            if (results) {
+                results.remove();
+                isResultsVisible = false;
+                currentSelectedIndex = -1;
+            }
+        }
+    }
+
+    // Handle arrow navigation when results are visible
+    if (isResultsVisible) {
+        const results = document.querySelectorAll('.subtitle-result');
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            currentSelectedIndex = Math.min(currentSelectedIndex + 1, results.length - 1);
+            highlightResult(results);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            currentSelectedIndex = Math.max(currentSelectedIndex - 1, 0);
+            highlightResult(results);
+        } else if (event.key === 'Enter' && currentSelectedIndex !== -1) {
+            event.preventDefault();
+            const selectedResult = results[currentSelectedIndex];
+            const timestamp = selectedResult.dataset.timestamp;
+            navigateToTimestamp(timestamp);
+        }
     }
 });
 
@@ -129,7 +159,6 @@ function displayResults(results) {
     let existingResults = document.getElementById('subtitleResults');
     if (existingResults) existingResults.remove();
 
-    // Create a results container
     const resultContainer = document.createElement('div');
     resultContainer.id = 'subtitleResults';
     resultContainer.style.position = 'fixed';
@@ -144,27 +173,44 @@ function displayResults(results) {
     resultContainer.style.maxHeight = '300px';
     resultContainer.style.overflowY = 'scroll';
 
-    if (results.length === 0) {
-        resultContainer.innerHTML = 'No matches found.';
-    } else {
-        results.forEach((result) => {
-            const resultItem = document.createElement('div');
-            resultItem.textContent = `${formatTimestamp(result.start)}: ${result.text}`;
-            resultItem.style.cursor = 'pointer';
-            resultItem.style.padding = '5px 0';
-            resultItem.style.borderBottom = '1px solid #eee';
-
-            // Click to navigate to timestamp
-            resultItem.addEventListener('click', () => {
-                const videoPlayer = document.querySelector('video');
-                videoPlayer.currentTime = parseFloat(result.start);
-            });
-
-            resultContainer.appendChild(resultItem);
-        });
-    }
+    results.forEach((result, index) => {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'subtitle-result';
+        resultDiv.dataset.timestamp = result.timestamp;
+        resultDiv.innerHTML = `${formatTimestamp(result.timestamp)} - ${result.text}`;
+        resultDiv.style.padding = '5px';
+        resultDiv.style.cursor = 'pointer';
+        resultDiv.onclick = () => navigateToTimestamp(result.timestamp);
+        resultContainer.appendChild(resultDiv);
+    });
 
     document.body.appendChild(resultContainer);
+    isResultsVisible = true;
+    currentSelectedIndex = -1;
+
+    // Add styles for selected state
+    const style = document.createElement('style');
+    style.textContent = `
+        .subtitle-result.selected {
+            background-color: #e6f3ff;
+            border-left: 3px solid #0066cc;
+        }
+        .subtitle-result:hover {
+            background-color: #f0f0f0;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function highlightResult(results) {
+    results.forEach((result, index) => {
+        if (index === currentSelectedIndex) {
+            result.classList.add('selected');
+            result.scrollIntoView({ block: 'nearest' });
+        } else {
+            result.classList.remove('selected');
+        }
+    });
 }
 
 // Choose one format based on your needs:
