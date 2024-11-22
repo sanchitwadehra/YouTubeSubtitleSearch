@@ -41,20 +41,44 @@ document.addEventListener('keydown', (e) => {
 
 async function fetchSubtitles() {
     try {
-        const videoData = JSON.parse(
-            document.querySelector('script#player').innerHTML.match(/var ytInitialPlayerResponse = (.+?);<\/script>/)[1]
+        // Find all scripts on the page
+        const scripts = Array.from(document.querySelectorAll('script:not([src])'));
+
+        // Locate the script containing ytInitialPlayerResponse
+        let playerResponseScript = scripts.find((script) =>
+            script.textContent.includes('ytInitialPlayerResponse')
         );
 
-        const captionTracks = videoData.captions.playerCaptionsTracklistRenderer.captionTracks;
+        if (!playerResponseScript) {
+            alert('Unable to find video metadata. Ensure the video has captions.');
+            return null;
+        }
+
+        // Extract ytInitialPlayerResponse from the script
+        const playerResponseMatch = playerResponseScript.textContent.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
+
+        if (!playerResponseMatch) {
+            alert('Unable to parse video metadata.');
+            return null;
+        }
+
+        const playerResponse = JSON.parse(playerResponseMatch[1]);
+
+        // Check for captions
+        const captionTracks =
+            playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
         if (!captionTracks || captionTracks.length === 0) {
             alert('No subtitles available for this video.');
             return null;
         }
 
-        const subtitleUrl = captionTracks[0].baseUrl; // Use the first subtitle track
+        // Fetch the subtitles (use the first track by default)
+        const subtitleUrl = captionTracks[0].baseUrl;
         const response = await fetch(subtitleUrl);
         const subtitles = await response.text();
 
+        // Parse XML subtitles
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(subtitles, 'text/xml');
         const texts = Array.from(xmlDoc.getElementsByTagName('text')).map((node) => ({
@@ -70,6 +94,7 @@ async function fetchSubtitles() {
         return null;
     }
 }
+
 
 async function searchSubtitles(keyword) {
     const subtitles = await fetchSubtitles();
