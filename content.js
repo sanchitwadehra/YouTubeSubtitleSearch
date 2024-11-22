@@ -1,43 +1,63 @@
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'k') {
-        e.preventDefault();
-        // Check if the search box already exists
-        let existingBox = document.getElementById('subtitleSearchBox');
-        if (existingBox) return;
+let isSearchBoxVisible = false;
 
-        // Create search box
-        const searchBox = document.createElement('input');
-        searchBox.type = 'text';
-        searchBox.id = 'subtitleSearchBox';
-        searchBox.placeholder = 'Type keyword to search subtitles...';
-        searchBox.style.position = 'fixed';
-        searchBox.style.top = '10%';
-        searchBox.style.left = '50%';
-        searchBox.style.transform = 'translateX(-50%)';
-        searchBox.style.padding = '10px';
-        searchBox.style.zIndex = '10000';
-        searchBox.style.width = '300px';
-        searchBox.style.border = '1px solid #ccc';
-        searchBox.style.borderRadius = '4px';
-        searchBox.style.background = '#fff';
-
-        document.body.appendChild(searchBox);
-
-        // Focus on the input
-        searchBox.focus();
-
-        // Listen for input or "Enter" key
-        searchBox.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                const query = searchBox.value.trim();
-                if (query) {
-                    const results = await searchSubtitles(query);
-                    displayResults(results);
-                }
-            }
-        });
+document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        toggleSearchBox();
     }
 });
+
+function toggleSearchBox() {
+    let searchBox = document.getElementById('subtitleSearchBox');
+    
+    if (!searchBox) {
+        // Create search box if it doesn't exist
+        createSearchBox();
+        isSearchBoxVisible = true;
+    } else {
+        // Toggle visibility
+        if (isSearchBoxVisible) {
+            searchBox.style.display = 'none';
+            isSearchBoxVisible = false;
+        } else {
+            searchBox.style.display = 'block';
+            searchBox.focus();
+            isSearchBoxVisible = true;
+        }
+    }
+}
+
+function createSearchBox() {
+    const searchBox = document.createElement('input');
+    searchBox.type = 'text';
+    searchBox.id = 'subtitleSearchBox';
+    searchBox.placeholder = 'Type keyword to search subtitles...';
+    searchBox.style.position = 'fixed';
+    searchBox.style.top = '10%';
+    searchBox.style.left = '50%';
+    searchBox.style.transform = 'translateX(-50%)';
+    searchBox.style.padding = '10px';
+    searchBox.style.zIndex = '10000';
+    searchBox.style.width = '300px';
+    searchBox.style.border = '1px solid #ccc';
+    searchBox.style.borderRadius = '4px';
+    searchBox.style.background = '#fff';
+    searchBox.style.display = 'block';
+
+    document.body.appendChild(searchBox);
+    searchBox.focus();
+
+    // Add Enter key listener
+    searchBox.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter') {
+            const query = searchBox.value.trim();
+            if (query) {
+                const results = await searchSubtitles(query);
+                displayResults(results);
+            }
+        }
+    });
+}
 
 async function fetchSubtitles() {
     try {
