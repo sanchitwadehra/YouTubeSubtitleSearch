@@ -155,32 +155,40 @@ async function searchSubtitles(keyword) {
 }
 
 function displayResults(results) {
-    // Remove existing results if any
+    // Remove existing results
     let existingResults = document.getElementById('subtitleResults');
     if (existingResults) existingResults.remove();
 
     const resultContainer = document.createElement('div');
     resultContainer.id = 'subtitleResults';
     resultContainer.style.position = 'fixed';
-    resultContainer.style.top = '20%';
+    resultContainer.style.top = '15%';
     resultContainer.style.left = '50%';
     resultContainer.style.transform = 'translateX(-50%)';
+    resultContainer.style.maxHeight = '50vh';
+    resultContainer.style.overflowY = 'auto';
     resultContainer.style.background = '#fff';
     resultContainer.style.border = '1px solid #ccc';
-    resultContainer.style.padding = '10px';
+    resultContainer.style.borderRadius = '4px';
     resultContainer.style.zIndex = '10000';
-    resultContainer.style.width = '300px';
-    resultContainer.style.maxHeight = '300px';
-    resultContainer.style.overflowY = 'scroll';
+    resultContainer.style.width = '60%';
+    resultContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
 
-    results.forEach((result, index) => {
+    results.forEach((result) => {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'subtitle-result';
-        resultDiv.dataset.timestamp = result.timestamp;
-        resultDiv.innerHTML = `${formatTimestamp(result.timestamp)} - ${result.text}`;
-        resultDiv.style.padding = '5px';
+        // Convert start time to seconds if it's not already
+        const timestamp = parseFloat(result.start);
+        resultDiv.dataset.timestamp = timestamp;
+        resultDiv.innerHTML = `${formatTimestamp(timestamp)} - ${result.text}`;
+        resultDiv.style.padding = '8px';
         resultDiv.style.cursor = 'pointer';
-        resultDiv.onclick = () => navigateToTimestamp(result.timestamp);
+        resultDiv.style.borderBottom = '1px solid #eee';
+        resultDiv.onclick = () => {
+            if (!isNaN(timestamp)) {
+                navigateToTimestamp(timestamp);
+            }
+        };
         resultContainer.appendChild(resultDiv);
     });
 
@@ -188,15 +196,24 @@ function displayResults(results) {
     isResultsVisible = true;
     currentSelectedIndex = -1;
 
-    // Add styles for selected state
+    // Add initial highlight for first result
+    const resultElements = document.querySelectorAll('.subtitle-result');
+    if (resultElements.length > 0) {
+        currentSelectedIndex = 0;
+        highlightResult(resultElements);
+    }
+
+    // Add CSS for selected state
     const style = document.createElement('style');
     style.textContent = `
+        .subtitle-result {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
         .subtitle-result.selected {
             background-color: #e6f3ff;
             border-left: 3px solid #0066cc;
-        }
-        .subtitle-result:hover {
-            background-color: #f0f0f0;
         }
     `;
     document.head.appendChild(style);
@@ -206,7 +223,7 @@ function highlightResult(results) {
     results.forEach((result, index) => {
         if (index === currentSelectedIndex) {
             result.classList.add('selected');
-            result.scrollIntoView({ block: 'nearest' });
+            result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         } else {
             result.classList.remove('selected');
         }
@@ -230,6 +247,20 @@ function formatTimestamp(seconds) {
 
 function navigateToTimestamp(timestamp) {
     const video = document.querySelector('video');
-    video.currentTime = timestamp;
-    video.play();
+    const time = parseFloat(timestamp);
+    if (video && !isNaN(time)) {
+        video.currentTime = time;
+        video.play();
+        // Optionally close search after navigation
+        const searchBox = document.getElementById('subtitleSearchBox');
+        if (searchBox) {
+            searchBox.style.display = 'none';
+            isSearchBoxVisible = false;
+        }
+        const results = document.getElementById('subtitleResults');
+        if (results) {
+            results.remove();
+            isResultsVisible = false;
+        }
+    }
 }
