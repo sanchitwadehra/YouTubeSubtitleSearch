@@ -14,6 +14,17 @@ A Chrome extension that enables quick and efficient searching through YouTube vi
   - `↑`: Navigate to previous result
   - `↓`: Navigate to next result
 
+  ## Technologies
+- JavaScript (ES6+)
+- HTML
+- CSS
+- Chrome Extensions API
+  - Manifest V3
+  - Content Scripts
+  - Background Scripts
+  - Commands API
+  - Scripting API
+
 ## Installation
 
 ### From Chrome Web Store
