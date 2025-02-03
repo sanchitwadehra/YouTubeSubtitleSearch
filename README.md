@@ -80,11 +80,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 If you encounter any issues or have suggestions for improvements, please open an issue on the GitHub repository.
 
-## Credits
-
-Created by [Your Name]
-Icon designed by [Designer Name/Source]
-
 ## Version History
 
 - 1.0.0 (2024): Initial release
