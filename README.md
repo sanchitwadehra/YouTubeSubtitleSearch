@@ -62,7 +62,7 @@ A Chrome extension that enables quick and efficient searching through YouTube vi
 ### Building from Source
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/youtube-subtitle-searcher.git
+git clone https://github.com/sanchitwadehra/YouTubeSubtitleSearch.git
 ```
 2. Make your modifications
 3. Load the extension in Chrome using Developer mode
