@@ -15,7 +15,7 @@
       }
     ],
     "action": {
-      "default_icon": "/Icon_Youtube_Subtitle_Search.png"
+      "default_icon": "/Icon_Youtube_Subtitle_Search_Transparent.png"
     },
     "commands": {
       "open-search": {
