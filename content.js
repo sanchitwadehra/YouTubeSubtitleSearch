@@ -3,10 +3,14 @@ let isResultsVisible = false;
 let currentSelectedIndex = -1;
 
 document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && event.key.toLowerCase() === 'k') {
+    // Check for Ctrl+K or Cmd+K (Mac)
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        // Prevent default behavior immediately
         event.preventDefault();
+        event.stopPropagation();
+        
         toggleSearchBox();
-        // Also hide results when search box is hidden
+        // Hide results when search box is hidden
         if (!isSearchBoxVisible) {
             const results = document.getElementById('subtitleResults');
             if (results) {
@@ -15,6 +19,7 @@ document.addEventListener('keydown', (event) => {
                 currentSelectedIndex = -1;
             }
         }
+        return false;
     }
 
     // Handle arrow navigation when results are visible
@@ -35,7 +40,7 @@ document.addEventListener('keydown', (event) => {
             navigateToTimestamp(timestamp);
         }
     }
-});
+}, true); // Added 'true' for event capturing phase
 
 function toggleSearchBox() {
     let searchBox = document.getElementById('subtitleSearchBox');
