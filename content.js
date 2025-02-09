@@ -76,22 +76,65 @@ function toggleSearchBox() {
     }
 }
 
+function getThemeColors() {
+    // Try multiple methods to detect theme
+    const html = document.documentElement;
+    const isDark = document.querySelector('html[dark]') !== null || 
+                  getComputedStyle(html).getPropertyValue('--yt-spec-base-background').trim() === '#0f0f0f' ||
+                  window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    return {
+        // Search box colors
+        searchBackground: isDark ? '#272727' : '#ffffff',
+        searchText: isDark ? '#ffffff' : '#000000',
+        searchBorder: isDark ? '1px solid #3f3f3f' : '1px solid #dadce0',
+        searchPlaceholder: isDark ? '#999999' : '#5f6368',
+        
+        // Results colors
+        resultBackground: isDark ? '#272727' : '#ffffff',
+        resultText: isDark ? '#ffffff' : '#000000',
+        resultBorder: isDark ? '#3f3f3f' : '#dadce0',
+        resultHover: isDark ? '#3a3a3a' : '#f5f5f5',
+        resultSelected: isDark ? '#3f3f3f' : '#e6f3ff',
+        resultSelectedBorder: isDark ? '#4f4f4f' : '#1a73e8',
+        boxShadow: isDark ? '0 2px 10px rgba(0,0,0,0.3)' : '0 2px 10px rgba(0,0,0,0.1)'
+    };
+}
+
 function createSearchBox() {
     const searchBox = document.createElement('input');
     searchBox.type = 'text';
     searchBox.id = 'subtitleSearchBox';
     searchBox.placeholder = 'Type keyword to search subtitles...';
-    searchBox.style.position = 'fixed';
-    searchBox.style.top = '10%';
-    searchBox.style.left = '50%';
-    searchBox.style.transform = 'translateX(-50%)';
-    searchBox.style.padding = '10px';
-    searchBox.style.zIndex = '10000';
-    searchBox.style.width = '300px';
-    searchBox.style.border = '1px solid #ccc';
-    searchBox.style.borderRadius = '4px';
-    searchBox.style.background = '#fff';
-    searchBox.style.display = 'block';
+    
+    const colors = getThemeColors();
+
+    Object.assign(searchBox.style, {
+        position: 'fixed',
+        top: '10%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '10px',
+        zIndex: '10000',
+        width: '300px',
+        borderRadius: '4px',
+        display: 'block',
+        background: colors.searchBackground,
+        color: colors.searchText,
+        border: colors.searchBorder,
+        boxShadow: colors.boxShadow,
+        outline: 'none' // Remove default focus outline
+    });
+
+    // Add placeholder color
+    const placeholderStyle = document.createElement('style');
+    placeholderStyle.textContent = `
+        #subtitleSearchBox::placeholder {
+            color: ${colors.searchPlaceholder};
+            opacity: 1;
+        }
+    `;
+    document.head.appendChild(placeholderStyle);
 
     document.body.appendChild(searchBox);
     searchBox.focus();
@@ -180,29 +223,31 @@ function displayResults(results) {
 
     const resultContainer = document.createElement('div');
     resultContainer.id = 'subtitleResults';
-    resultContainer.style.position = 'fixed';
-    resultContainer.style.top = '15%';
-    resultContainer.style.left = '50%';
-    resultContainer.style.transform = 'translateX(-50%)';
-    resultContainer.style.maxHeight = '50vh';
-    resultContainer.style.overflowY = 'auto';
-    resultContainer.style.background = '#fff';
-    resultContainer.style.border = '1px solid #ccc';
-    resultContainer.style.borderRadius = '4px';
-    resultContainer.style.zIndex = '10000';
-    resultContainer.style.width = '60%';
-    resultContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+
+    const colors = getThemeColors();
+
+    Object.assign(resultContainer.style, {
+        position: 'fixed',
+        top: '15%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        maxHeight: '50vh',
+        overflowY: 'auto',
+        borderRadius: '4px',
+        zIndex: '10000',
+        width: '60%',
+        background: colors.resultBackground,
+        border: `1px solid ${colors.resultBorder}`,
+        boxShadow: colors.boxShadow,
+        color: colors.resultText
+    });
 
     results.forEach((result) => {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'subtitle-result';
-        // Convert start time to seconds if it's not already
         const timestamp = parseFloat(result.start);
         resultDiv.dataset.timestamp = timestamp;
         resultDiv.innerHTML = `${formatTimestamp(timestamp)} - ${result.text}`;
-        resultDiv.style.padding = '8px';
-        resultDiv.style.cursor = 'pointer';
-        resultDiv.style.borderBottom = '1px solid #eee';
         resultDiv.onclick = () => {
             if (!isNaN(timestamp)) {
                 navigateToTimestamp(timestamp);
@@ -222,17 +267,35 @@ function displayResults(results) {
         highlightResult(resultElements);
     }
 
-    // Add CSS for selected state
+    // Add theme-aware CSS for results
     const style = document.createElement('style');
     style.textContent = `
         .subtitle-result {
             padding: 8px;
             cursor: pointer;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid ${colors.resultBorder};
+            color: ${colors.resultText};
+            transition: background-color 0.2s ease;
+        }
+        .subtitle-result:hover {
+            background-color: ${colors.resultHover};
         }
         .subtitle-result.selected {
-            background-color: #e6f3ff;
-            border-left: 3px solid #0066cc;
+            background-color: ${colors.resultSelected};
+            border-left: 3px solid ${colors.resultSelectedBorder};
+        }
+        #subtitleResults::-webkit-scrollbar {
+            width: 8px;
+        }
+        #subtitleResults::-webkit-scrollbar-track {
+            background: ${colors.resultBackground};
+        }
+        #subtitleResults::-webkit-scrollbar-thumb {
+            background: ${colors.resultBorder};
+            border-radius: 4px;
+        }
+        #subtitleResults::-webkit-scrollbar-thumb:hover {
+            background: ${colors.resultSelectedBorder};
         }
     `;
     document.head.appendChild(style);
