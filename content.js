@@ -1,6 +1,7 @@
 let isSearchBoxVisible = false;
 let isResultsVisible = false;
 let currentSelectedIndex = -1;
+let lastSearch = '';
 
 document.addEventListener('keydown', (event) => {
     // Check for Ctrl+K or Cmd+K (Mac)
@@ -68,11 +69,11 @@ function toggleSearchBox() {
         if (isSearchBoxVisible) {
             searchBox.style.display = 'none';
             isSearchBoxVisible = false;
-            // Clear the search box value when hiding
-            searchBox.value = '';
+            searchBox.value = ''; // Clear the input value but keep lastSearch
         } else {
             searchBox.style.display = 'block';
-            searchBox.value = ''; // Clear any previous search
+            searchBox.value = ''; // Clear the input value
+            searchBox.placeholder = lastSearch || 'Type keyword to search subtitles...';
             searchBox.focus();
             isSearchBoxVisible = true;
             // Clear any existing results
@@ -115,7 +116,7 @@ function createSearchBox() {
     const searchBox = document.createElement('input');
     searchBox.type = 'text';
     searchBox.id = 'subtitleSearchBox';
-    searchBox.placeholder = 'Type keyword to search subtitles...';
+    searchBox.placeholder = lastSearch || 'Type keyword to search subtitles...';
     
     const colors = getThemeColors();
 
@@ -133,7 +134,7 @@ function createSearchBox() {
         color: colors.searchText,
         border: colors.searchBorder,
         boxShadow: colors.boxShadow,
-        outline: 'none' // Remove default focus outline
+        outline: 'none'
     });
 
     // Add placeholder color
@@ -149,14 +150,44 @@ function createSearchBox() {
     document.body.appendChild(searchBox);
     searchBox.focus();
 
-    // Add Enter key listener
+    // Add event listeners
     searchBox.addEventListener('keydown', async (event) => {
         if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default Enter behavior
             const query = searchBox.value.trim();
             if (query) {
+                lastSearch = query; // Save the search
                 const results = await searchSubtitles(query);
+                
+                // Always show results first
                 displayResults(results);
+                
+                // Only navigate if results are visible and we have a selected index
+                if (results.length > 0) {
+                    isResultsVisible = true;
+                    currentSelectedIndex = 0;
+                    highlightResult(document.querySelectorAll('.subtitle-result'));
+                }
             }
+        } else if (event.key === 'Tab') {
+            event.preventDefault();
+            if (lastSearch && !searchBox.value) {
+                searchBox.value = lastSearch;
+            }
+        }
+    });
+
+    // Clear placeholder when user starts typing
+    searchBox.addEventListener('input', () => {
+        // Remove the condition that was clearing the input
+        // Just let the user type normally, regardless of what was in lastSearch
+        
+        // Clear existing results when typing
+        const existingResults = document.getElementById('subtitleResults');
+        if (existingResults) {
+            existingResults.remove();
+            isResultsVisible = false;
+            currentSelectedIndex = -1;
         }
     });
 }
@@ -378,7 +409,8 @@ function navigateToTimestamp(timestamp) {
         const searchBox = document.getElementById('subtitleSearchBox');
         if (searchBox) {
             searchBox.style.display = 'none';
-            searchBox.value = ''; // Clear the search box
+            // Don't clear the lastSearch value, but clear the input value
+            searchBox.value = '';
             isSearchBoxVisible = false;
         }
         
