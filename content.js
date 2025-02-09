@@ -256,16 +256,19 @@ function navigateToTimestamp(timestamp) {
     if (video && !isNaN(time)) {
         video.currentTime = time;
         video.play();
-        // Optionally close search after navigation
+        
+        // Close search box and results after navigation
         const searchBox = document.getElementById('subtitleSearchBox');
         if (searchBox) {
             searchBox.style.display = 'none';
             isSearchBoxVisible = false;
         }
+        
         const results = document.getElementById('subtitleResults');
         if (results) {
             results.remove();
             isResultsVisible = false;
+            currentSelectedIndex = -1; // Reset the selected index
         }
     }
 }
