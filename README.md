@@ -97,3 +97,10 @@ If you encounter any issues or have suggestions for improvements, please open an
   - Basic subtitle search functionality
   - Keyboard navigation
   - Timestamp jumping
+
+The activeTab permission is required to interact with the current YouTube video page. This allows the extension to:
+1. Read subtitle/caption data from the current video
+2. Insert the search interface when activated
+3. Control video playback to jump to specific timestamps when a search result is selected
+
+The extension only activates when explicitly triggered by the user (via Ctrl+K/Cmd+K) and only on YouTube.com video pages.
