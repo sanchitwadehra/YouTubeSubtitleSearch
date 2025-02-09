@@ -67,15 +67,14 @@ function toggleSearchBox() {
         if (isSearchBoxVisible) {
             searchBox.style.display = 'none';
             isSearchBoxVisible = false;
-            searchBox.value = ''; // Clear the input value but keep lastSearch
+            searchBox.value = '';
         } else {
             searchBox.style.display = 'block';
-            searchBox.value = ''; // Clear the input value
+            searchBox.value = '';
             searchBox.placeholder = lastSearch || 'Type keyword to search subtitles...';
             searchBox.focus();
             isSearchBoxVisible = true;
             
-            // Clear any existing results
             const existingResults = document.getElementById('subtitleResults');
             if (existingResults) {
                 existingResults.remove();
@@ -169,73 +168,15 @@ function createSearchBox() {
             if (lastSearch && !searchBox.value) {
                 searchBox.value = lastSearch;
             }
-        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            const query = searchBox.value.trim();
-            const historyContainer = document.getElementById('searchHistory');
-            
-            if (!query && searchHistory.length > 0) {
-                event.preventDefault();
-                
-                if (!historyContainer) {
-                    showSearchHistory();
-                    currentSelectedIndex = event.key === 'ArrowDown' ? 0 : searchHistory.length - 1;
-                } else {
-                    if (event.key === 'ArrowDown') {
-                        currentSelectedIndex = currentSelectedIndex === -1 ? 0 :
-                            Math.min(currentSelectedIndex + 1, searchHistory.length - 1);
-                    } else {
-                        currentSelectedIndex = currentSelectedIndex === -1 ? 
-                            searchHistory.length - 1 : 
-                            Math.max(currentSelectedIndex - 1, 0);
-                    }
-                }
-                
-                const historyItems = document.querySelectorAll('.history-item');
-                historyItems.forEach((item, index) => {
-                    if (index === currentSelectedIndex) {
-                        item.classList.add('history-selected');
-                        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                        searchBox.value = item.textContent;
-                    } else {
-                        item.classList.remove('history-selected');
-                    }
-                });
-            } else if (isResultsVisible) {
-                // Existing results navigation code
-                event.preventDefault();
-                const results = document.querySelectorAll('.subtitle-result');
-                if (event.key === 'ArrowDown') {
-                    currentSelectedIndex = Math.min(currentSelectedIndex + 1, results.length - 1);
-                } else {
-                    currentSelectedIndex = Math.max(currentSelectedIndex - 1, 0);
-                }
-                highlightResult(results);
-            }
-        } else if (event.key === 'Escape') {
-            // Handle Escape key
-            const historyContainer = document.getElementById('searchHistory');
-            if (historyContainer) {
-                historyContainer.remove();
-                searchBox.value = '';
-                currentSelectedIndex = -1;
-            }
         }
     });
 
-    // Update the input event listener
+    // Update input listener to only clear results
     searchBox.addEventListener('input', () => {
         const existingResults = document.getElementById('subtitleResults');
         if (existingResults) {
             existingResults.remove();
             isResultsVisible = false;
-            currentSelectedIndex = -1;
-        }
-    });
-
-    // Add focus event to show history when search box is empty
-    searchBox.addEventListener('focus', () => {
-        if (!searchBox.value.trim() && searchHistory.length > 0) {
-            showSearchHistory();
             currentSelectedIndex = -1;
         }
     });
@@ -561,24 +502,4 @@ function parseTimeInput(timeStr) {
     if (!timeStr) return null;
     const [min, sec] = timeStr.split(':').map(Number);
     return min * 60 + (sec || 0);
-}
-
-function showKeyboardShortcuts() {
-    const shortcuts = document.createElement('div');
-    shortcuts.innerHTML = `
-        <div style="position: fixed; bottom: 20px; right: 20px; 
-                    background: ${colors.resultBackground}; padding: 10px; 
-                    border-radius: 4px; border: ${colors.resultBorder}">
-            <h3>Keyboard Shortcuts</h3>
-            <ul>
-                <li>Ctrl/⌘ + K: Open search</li>
-                <li>↑/↓: Navigate results</li>
-                <li>Enter: Go to timestamp</li>
-                <li>Tab: Use last search</li>
-                <li>Esc: Close search</li>
-            </ul>
-        </div>
-    `;
-    document.body.appendChild(shortcuts);
-    setTimeout(() => shortcuts.remove(), 3000);
 }
