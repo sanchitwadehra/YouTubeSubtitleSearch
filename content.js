@@ -68,10 +68,20 @@ function toggleSearchBox() {
         if (isSearchBoxVisible) {
             searchBox.style.display = 'none';
             isSearchBoxVisible = false;
+            // Clear the search box value when hiding
+            searchBox.value = '';
         } else {
             searchBox.style.display = 'block';
+            searchBox.value = ''; // Clear any previous search
             searchBox.focus();
             isSearchBoxVisible = true;
+            // Clear any existing results
+            const existingResults = document.getElementById('subtitleResults');
+            if (existingResults) {
+                existingResults.remove();
+                isResultsVisible = false;
+                currentSelectedIndex = -1;
+            }
         }
     }
 }
@@ -212,13 +222,20 @@ async function searchSubtitles(keyword) {
     const subtitles = await fetchSubtitles();
     if (!subtitles) return [];
 
-    const results = subtitles.filter((sub) => sub.text.toLowerCase().includes(keyword.toLowerCase()));
+    // Convert keyword to lowercase and trim any extra spaces
+    const searchTerms = keyword.toLowerCase().trim().split(/\s+/);
+    
+    // Filter subtitles that contain all search terms
+    const results = subtitles.filter((sub) => {
+        const subtitleText = sub.text.toLowerCase();
+        return searchTerms.every(term => subtitleText.includes(term));
+    });
+    
     return results;
 }
 
 function displayResults(results) {
-    // Remove existing results
-    let existingResults = document.getElementById('subtitleResults');
+    const existingResults = document.getElementById('subtitleResults');
     if (existingResults) existingResults.remove();
 
     const resultContainer = document.createElement('div');
@@ -247,7 +264,24 @@ function displayResults(results) {
         resultDiv.className = 'subtitle-result';
         const timestamp = parseFloat(result.start);
         resultDiv.dataset.timestamp = timestamp;
-        resultDiv.innerHTML = `${formatTimestamp(timestamp)} - ${result.text}`;
+        
+        // Get the search terms from the search box
+        const searchTerms = document.getElementById('subtitleSearchBox').value
+            .toLowerCase()
+            .trim()
+            .split(/\s+/);
+        
+        // Create the text content with highlights
+        let textContent = result.text;
+        searchTerms.forEach(term => {
+            // Create a regex that matches the term with case insensitivity
+            const regex = new RegExp(`(${term})`, 'gi');
+            textContent = textContent.replace(regex, '<span class="highlight">$1</span>');
+        });
+        
+        // Create separate spans for timestamp and highlighted text
+        resultDiv.innerHTML = `<span style="color: #2196F3">${formatTimestamp(timestamp)}</span> - ${textContent}`;
+        
         resultDiv.onclick = () => {
             if (!isNaN(timestamp)) {
                 navigateToTimestamp(timestamp);
@@ -283,6 +317,12 @@ function displayResults(results) {
         .subtitle-result.selected {
             background-color: ${colors.resultSelected};
             border-left: 3px solid ${colors.resultSelectedBorder};
+        }
+        .highlight {
+            background-color: #ffeb3b;
+            color: #000000;
+            padding: 0 2px;
+            border-radius: 2px;
         }
         #subtitleResults::-webkit-scrollbar {
             width: 8px;
@@ -338,6 +378,7 @@ function navigateToTimestamp(timestamp) {
         const searchBox = document.getElementById('subtitleSearchBox');
         if (searchBox) {
             searchBox.style.display = 'none';
+            searchBox.value = ''; // Clear the search box
             isSearchBoxVisible = false;
         }
         
@@ -345,7 +386,7 @@ function navigateToTimestamp(timestamp) {
         if (results) {
             results.remove();
             isResultsVisible = false;
-            currentSelectedIndex = -1; // Reset the selected index
+            currentSelectedIndex = -1;
         }
     }
 }
