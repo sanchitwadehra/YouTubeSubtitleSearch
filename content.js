@@ -5,7 +5,6 @@ let currentSelectedIndex = -1;
 document.addEventListener('keydown', (event) => {
     // Check for Ctrl+K or Cmd+K (Mac)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        // Prevent default behavior immediately
         event.preventDefault();
         event.stopPropagation();
         
@@ -35,9 +34,24 @@ document.addEventListener('keydown', (event) => {
             highlightResult(results);
         } else if (event.key === 'Enter' && currentSelectedIndex !== -1) {
             event.preventDefault();
+            event.stopPropagation(); // Add this to prevent event bubbling
             const selectedResult = results[currentSelectedIndex];
             const timestamp = selectedResult.dataset.timestamp;
             navigateToTimestamp(timestamp);
+            
+            // Explicitly handle cleanup here
+            const searchBox = document.getElementById('subtitleSearchBox');
+            if (searchBox) {
+                searchBox.style.display = 'none';
+                isSearchBoxVisible = false;
+            }
+            
+            const resultsList = document.getElementById('subtitleResults');
+            if (resultsList) {
+                resultsList.remove();
+                isResultsVisible = false;
+                currentSelectedIndex = -1;
+            }
         }
     }
 }, true); // Added 'true' for event capturing phase
