@@ -61,11 +61,9 @@ function toggleSearchBox() {
     let searchBox = document.getElementById('subtitleSearchBox');
     
     if (!searchBox) {
-        // Create search box if it doesn't exist
         createSearchBox();
         isSearchBoxVisible = true;
     } else {
-        // Toggle visibility
         if (isSearchBoxVisible) {
             searchBox.style.display = 'none';
             isSearchBoxVisible = false;
@@ -76,6 +74,7 @@ function toggleSearchBox() {
             searchBox.placeholder = lastSearch || 'Type keyword to search subtitles...';
             searchBox.focus();
             isSearchBoxVisible = true;
+            
             // Clear any existing results
             const existingResults = document.getElementById('subtitleResults');
             if (existingResults) {
@@ -153,16 +152,12 @@ function createSearchBox() {
     // Add event listeners
     searchBox.addEventListener('keydown', async (event) => {
         if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent default Enter behavior
+            event.preventDefault();
             const query = searchBox.value.trim();
             if (query) {
-                lastSearch = query; // Save the search
+                lastSearch = query;
                 const results = await searchSubtitles(query);
-                
-                // Always show results first
                 displayResults(results);
-                
-                // Only navigate if results are visible and we have a selected index
                 if (results.length > 0) {
                     isResultsVisible = true;
                     currentSelectedIndex = 0;
@@ -174,15 +169,61 @@ function createSearchBox() {
             if (lastSearch && !searchBox.value) {
                 searchBox.value = lastSearch;
             }
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            const query = searchBox.value.trim();
+            const historyContainer = document.getElementById('searchHistory');
+            
+            if (!query && searchHistory.length > 0) {
+                event.preventDefault();
+                
+                if (!historyContainer) {
+                    showSearchHistory();
+                    currentSelectedIndex = event.key === 'ArrowDown' ? 0 : searchHistory.length - 1;
+                } else {
+                    if (event.key === 'ArrowDown') {
+                        currentSelectedIndex = currentSelectedIndex === -1 ? 0 :
+                            Math.min(currentSelectedIndex + 1, searchHistory.length - 1);
+                    } else {
+                        currentSelectedIndex = currentSelectedIndex === -1 ? 
+                            searchHistory.length - 1 : 
+                            Math.max(currentSelectedIndex - 1, 0);
+                    }
+                }
+                
+                const historyItems = document.querySelectorAll('.history-item');
+                historyItems.forEach((item, index) => {
+                    if (index === currentSelectedIndex) {
+                        item.classList.add('history-selected');
+                        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        searchBox.value = item.textContent;
+                    } else {
+                        item.classList.remove('history-selected');
+                    }
+                });
+            } else if (isResultsVisible) {
+                // Existing results navigation code
+                event.preventDefault();
+                const results = document.querySelectorAll('.subtitle-result');
+                if (event.key === 'ArrowDown') {
+                    currentSelectedIndex = Math.min(currentSelectedIndex + 1, results.length - 1);
+                } else {
+                    currentSelectedIndex = Math.max(currentSelectedIndex - 1, 0);
+                }
+                highlightResult(results);
+            }
+        } else if (event.key === 'Escape') {
+            // Handle Escape key
+            const historyContainer = document.getElementById('searchHistory');
+            if (historyContainer) {
+                historyContainer.remove();
+                searchBox.value = '';
+                currentSelectedIndex = -1;
+            }
         }
     });
 
-    // Clear placeholder when user starts typing
+    // Update the input event listener
     searchBox.addEventListener('input', () => {
-        // Remove the condition that was clearing the input
-        // Just let the user type normally, regardless of what was in lastSearch
-        
-        // Clear existing results when typing
         const existingResults = document.getElementById('subtitleResults');
         if (existingResults) {
             existingResults.remove();
@@ -190,15 +231,20 @@ function createSearchBox() {
             currentSelectedIndex = -1;
         }
     });
+
+    // Add focus event to show history when search box is empty
+    searchBox.addEventListener('focus', () => {
+        if (!searchBox.value.trim() && searchHistory.length > 0) {
+            showSearchHistory();
+            currentSelectedIndex = -1;
+        }
+    });
 }
 
 async function fetchSubtitles() {
     try {
-        // Find all scripts on the page
         const scripts = Array.from(document.querySelectorAll('script:not([src])'));
-
-        // Locate the script containing ytInitialPlayerResponse
-        let playerResponseScript = scripts.find((script) =>
+        const playerResponseScript = scripts.find((script) =>
             script.textContent.includes('ytInitialPlayerResponse')
         );
 
@@ -207,7 +253,6 @@ async function fetchSubtitles() {
             return null;
         }
 
-        // Extract ytInitialPlayerResponse from the script
         const playerResponseMatch = playerResponseScript.textContent.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
 
         if (!playerResponseMatch) {
@@ -217,21 +262,36 @@ async function fetchSubtitles() {
 
         const playerResponse = JSON.parse(playerResponseMatch[1]);
 
-        // Check for captions
-        const captionTracks =
-            playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+        const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+        
+        if (captionTracks && captionTracks.length > 1) {
+            const languageSelect = document.createElement('select');
+            languageSelect.id = 'subtitleLanguageSelect';
+            languageSelect.style.position = 'fixed';
+            languageSelect.style.top = 'calc(10% - 30px)';
+            languageSelect.style.left = '50%';
+            languageSelect.style.transform = 'translateX(-50%)';
+            languageSelect.style.zIndex = '10000';
+
+            captionTracks.forEach((track, index) => {
+                const option = document.createElement('option');
+                option.value = track.baseUrl;
+                option.text = track.name.simpleText;
+                languageSelect.appendChild(option);
+            });
+
+            document.body.appendChild(languageSelect);
+        }
 
         if (!captionTracks || captionTracks.length === 0) {
             alert('No subtitles available for this video.');
             return null;
         }
 
-        // Fetch the subtitles (use the first track by default)
         const subtitleUrl = captionTracks[0].baseUrl;
         const response = await fetch(subtitleUrl);
         const subtitles = await response.text();
 
-        // Parse XML subtitles
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(subtitles, 'text/xml');
         const texts = Array.from(xmlDoc.getElementsByTagName('text')).map((node) => ({
@@ -370,6 +430,8 @@ function displayResults(results) {
         }
     `;
     document.head.appendChild(style);
+
+    addExportButton(resultContainer);
 }
 
 function highlightResult(results) {
@@ -421,4 +483,102 @@ function navigateToTimestamp(timestamp) {
             currentSelectedIndex = -1;
         }
     }
+}
+
+function addExportButton(resultContainer) {
+    const colors = getThemeColors();
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = 'Export Results';
+    
+    Object.assign(exportBtn.style, {
+        position: 'absolute',
+        right: '10px',
+        top: '10px',
+        padding: '6px 12px',
+        backgroundColor: colors.resultSelectedBorder,
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '14px'
+    });
+    
+    exportBtn.onmouseover = () => {
+        exportBtn.style.opacity = '0.9';
+    };
+    
+    exportBtn.onmouseout = () => {
+        exportBtn.style.opacity = '1';
+    };
+    
+    exportBtn.onclick = () => {
+        const results = Array.from(document.querySelectorAll('.subtitle-result'))
+            .map(result => {
+                const timestamp = result.querySelector('span').textContent;
+                const text = result.textContent.split(' - ')[1];
+                return `${timestamp} - ${text}`;
+            })
+            .join('\n');
+
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `youtube-subtitles-${new Date().toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    resultContainer.appendChild(exportBtn);
+}
+
+function addTimeRangeFilter(searchBox) {
+    const rangeContainer = document.createElement('div');
+    rangeContainer.style.marginTop = '5px';
+    
+    const startInput = document.createElement('input');
+    startInput.type = 'text';
+    startInput.placeholder = 'Start (MM:SS)';
+    
+    const endInput = document.createElement('input');
+    endInput.type = 'text';
+    endInput.placeholder = 'End (MM:SS)';
+    
+    rangeContainer.appendChild(startInput);
+    rangeContainer.appendChild(endInput);
+    
+    searchBox.parentNode.insertBefore(rangeContainer, searchBox.nextSibling);
+    
+    return {
+        getRange: () => ({
+            start: parseTimeInput(startInput.value),
+            end: parseTimeInput(endInput.value)
+        })
+    };
+}
+
+function parseTimeInput(timeStr) {
+    if (!timeStr) return null;
+    const [min, sec] = timeStr.split(':').map(Number);
+    return min * 60 + (sec || 0);
+}
+
+function showKeyboardShortcuts() {
+    const shortcuts = document.createElement('div');
+    shortcuts.innerHTML = `
+        <div style="position: fixed; bottom: 20px; right: 20px; 
+                    background: ${colors.resultBackground}; padding: 10px; 
+                    border-radius: 4px; border: ${colors.resultBorder}">
+            <h3>Keyboard Shortcuts</h3>
+            <ul>
+                <li>Ctrl/⌘ + K: Open search</li>
+                <li>↑/↓: Navigate results</li>
+                <li>Enter: Go to timestamp</li>
+                <li>Tab: Use last search</li>
+                <li>Esc: Close search</li>
+            </ul>
+        </div>
+    `;
+    document.body.appendChild(shortcuts);
+    setTimeout(() => shortcuts.remove(), 3000);
 }
