@@ -28,7 +28,7 @@ A Chrome extension that enables quick and efficient searching through YouTube vi
 ## Installation
 
 ### From Chrome Web Store
-*(Coming soon)*
+(https://chromewebstore.google.com/detail/youtube-subtitle-searcher/lnoiiejflgfpleapnbakamgonhggjphl?pli=1)
 
 ### Manual Installation
 1. Clone this repository or download the ZIP file
