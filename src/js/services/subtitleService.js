@@ -1,4 +1,4 @@
-export async function fetchSubtitles() {
+async function fetchSubtitles() {
     try {
         const scripts = Array.from(document.querySelectorAll('script:not([src])'));
         const playerResponseScript = scripts.find((script) =>
@@ -10,6 +10,9 @@ export async function fetchSubtitles() {
             return null;
         }
 
+        // Log the entire script content
+        console.log('Found player response script:', playerResponseScript.textContent);
+
         const playerResponseMatch = playerResponseScript.textContent.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
 
         if (!playerResponseMatch) {
@@ -18,12 +21,17 @@ export async function fetchSubtitles() {
         }
 
         const playerResponse = JSON.parse(playerResponseMatch[1]);
+        
+        // Log the parsed player response
+        console.log('Parsed player response:', playerResponse);
 
         const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
         
-        if (captionTracks && captionTracks.length > 1) {
-            createLanguageSelector(captionTracks);
-        }
+        // Log available caption tracks
+        console.log('Available caption tracks:', captionTracks);
+        
+        // Remove any existing language selector
+        removeLanguageSelector();
 
         if (!captionTracks || captionTracks.length === 0) {
             alert('No subtitles available for this video.');
@@ -31,8 +39,11 @@ export async function fetchSubtitles() {
         }
 
         const subtitleUrl = captionTracks[0].baseUrl;
+        console.log('Selected subtitle URL:', subtitleUrl);
+        
         const response = await fetch(subtitleUrl);
         const subtitles = await response.text();
+        console.log('Fetched subtitles:', subtitles);
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(subtitles, 'text/xml');
@@ -42,6 +53,7 @@ export async function fetchSubtitles() {
             text: node.textContent,
         }));
 
+        console.log('Processed subtitle texts:', texts);
         return texts;
     } catch (error) {
         console.error('Error fetching subtitles:', error);
@@ -50,7 +62,7 @@ export async function fetchSubtitles() {
     }
 }
 
-export async function searchSubtitles(keyword) {
+async function searchSubtitles(keyword) {
     const subtitles = await fetchSubtitles();
     if (!subtitles) return [];
 
@@ -66,21 +78,14 @@ export async function searchSubtitles(keyword) {
     return results;
 }
 
-function createLanguageSelector(captionTracks) {
-    const languageSelect = document.createElement('select');
-    languageSelect.id = 'subtitleLanguageSelect';
-    languageSelect.style.position = 'fixed';
-    languageSelect.style.top = 'calc(10% - 30px)';
-    languageSelect.style.left = '50%';
-    languageSelect.style.transform = 'translateX(-50%)';
-    languageSelect.style.zIndex = '10000';
-
-    captionTracks.forEach((track, index) => {
-        const option = document.createElement('option');
-        option.value = track.baseUrl;
-        option.text = track.name.simpleText;
-        languageSelect.appendChild(option);
-    });
-
-    document.body.appendChild(languageSelect);
+// Keep this function for cleanup purposes
+function removeLanguageSelector() {
+    const languageSelect = document.getElementById('subtitleLanguageSelect');
+    if (languageSelect) {
+        languageSelect.remove();
+    }
+    // Clear the global reference if exists
+    if (window.subtitleLanguageSelector) {
+        window.subtitleLanguageSelector = null;
+    }
 } 

@@ -1,7 +1,4 @@
-import { getThemeColors } from '../utils/themeManager.js';
-import { formatTimestamp, navigateToTimestamp } from '../utils/helpers.js';
-
-export class Results {
+class Results {
     constructor() {
         this.isVisible = false;
         this.currentSelectedIndex = -1;

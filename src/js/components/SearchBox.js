@@ -1,6 +1,4 @@
-import { getThemeColors } from '../utils/themeManager.js';
-
-export class SearchBox {
+class SearchBox {
     constructor(onSearch) {
         this.isVisible = false;
         this.lastSearch = '';
@@ -83,6 +81,10 @@ export class SearchBox {
                 this.element.style.display = 'none';
                 this.isVisible = false;
                 this.element.value = '';
+                // Hide language selector when search box is hidden
+                if (typeof removeLanguageSelector === 'function') {
+                    removeLanguageSelector();
+                }
             } else {
                 this.element.style.display = 'block';
                 this.element.value = '';
@@ -98,6 +100,10 @@ export class SearchBox {
             this.element.style.display = 'none';
             this.isVisible = false;
             this.element.value = '';
+            // Hide language selector when search box is hidden
+            if (typeof removeLanguageSelector === 'function') {
+                removeLanguageSelector();
+            }
         }
     }
 } 

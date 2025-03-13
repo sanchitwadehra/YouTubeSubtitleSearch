@@ -1,4 +1,4 @@
-export function getThemeColors() {
+function getThemeColors() {
     // Try multiple methods to detect theme
     const html = document.documentElement;
     const isDark = document.querySelector('html[dark]') !== null || 

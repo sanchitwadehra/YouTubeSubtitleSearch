@@ -5,23 +5,32 @@
     "description": "Search through YouTube video subtitles with keyboard shortcuts",
     "permissions": [
       "activeTab",
-      "scripting"
+      "scripting",
+      "commands",
+      "tabs"
     ],
     "host_permissions": [
       "*://*.youtube.com/*"
     ],
     "background": {
-      "service_worker": "src/js/background.js"
+      "service_worker": "src/js/background.js",
+      "type": "module"
     },
     "content_scripts": [
       {
         "matches": ["*://*.youtube.com/*"],
-        "js": ["src/js/content.js"],
-        "type": "module"
+        "js": [
+          "src/js/utils/themeManager.js",
+          "src/js/utils/helpers.js",
+          "src/js/services/subtitleService.js",
+          "src/js/components/SearchBox.js",
+          "src/js/components/Results.js",
+          "src/js/content.js"
+        ]
       }
     ],
     "action": {
-      "default_icon": "/Icon_Youtube_Subtitle_Search_Transparent.png"
+      "default_icon": "icons/Icon_Youtube_Subtitle_Search_Transparent.png"
     },
     "commands": {
       "open-search": {
@@ -32,8 +41,8 @@
       }
     },
     "icons": {
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "48": "icons/Icon_Youtube_Subtitle_Search_Transparent.png",
+      "128": "icons/Icon_Youtube_Subtitle_Search_Transparent.png"
     }
   }
   

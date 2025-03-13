@@ -1,8 +1,3 @@
-import { SearchBox } from './components/SearchBox.js';
-import { Results } from './components/Results.js';
-import { searchSubtitles } from './services/subtitleService.js';
-import { navigateToTimestamp } from './utils/helpers.js';
-
 class SubtitleSearch {
     constructor() {
         this.searchBox = new SearchBox(this.handleSearch.bind(this));
@@ -65,9 +60,19 @@ class SubtitleSearch {
 
     init() {
         document.addEventListener('keydown', this.handleKeydown.bind(this), true);
+        
+        // Listen for messages from the background script
+        chrome.runtime.onMessage.addListener((message) => {
+            if (message.action === 'toggle-search') {
+                this.searchBox.toggle();
+                if (!this.searchBox.isVisible) {
+                    this.results.remove();
+                }
+            }
+        });
     }
 }
 
 // Initialize the extension
 const subtitleSearch = new SubtitleSearch();
-subtitleSearch.init(); 
+subtitleSearch.init();
