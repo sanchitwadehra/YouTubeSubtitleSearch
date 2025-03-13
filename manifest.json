@@ -1,17 +1,23 @@
 {
     "manifest_version": 3,
-    "name": "YouTube Subtitle Searcher",
+    "name": "YouTube Subtitle Search",
     "version": "1.0",
-    "description": "Search for words in YouTube video subtitles and navigate to timestamps.",
-    "permissions": ["activeTab", "scripting"],
-    "host_permissions": ["https://www.youtube.com/*"],
+    "description": "Search through YouTube video subtitles with keyboard shortcuts",
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ],
+    "host_permissions": [
+      "*://*.youtube.com/*"
+    ],
     "background": {
-      "service_worker": "background.js"
+      "service_worker": "src/js/background.js"
     },
     "content_scripts": [
       {
-        "matches": ["https://www.youtube.com/watch*"],
-        "js": ["content.js"]
+        "matches": ["*://*.youtube.com/*"],
+        "js": ["src/js/content.js"],
+        "type": "module"
       }
     ],
     "action": {
@@ -24,6 +30,10 @@
         },
         "description": "Open the subtitle search box"
       }
+    },
+    "icons": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   }
   
