@@ -76,6 +76,8 @@ class SearchBox {
             this.create();
             document.body.appendChild(this.element);
             this.isVisible = true;
+            // Add focus when first creating the element
+            this.element.focus();
         } else {
             if (this.isVisible) {
                 this.element.style.display = 'none';
