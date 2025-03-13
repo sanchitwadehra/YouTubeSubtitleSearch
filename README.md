@@ -9,12 +9,15 @@ A Chrome extension that enables quick and efficient searching through YouTube vi
 - **Keyboard Navigation**: Use arrow keys to navigate through search results
 - **Click-to-Jump**: Click on any search result to jump to that timestamp in the video
 - **Timestamp Display**: Each result shows the exact timestamp where the text appears
+- **Export Results**: Export search results to a text file
+- **Theme Support**: Automatically adapts to YouTube's light/dark theme
 - **Keyboard Shortcuts**:
   - `Enter`: Jump to the selected timestamp
   - `↑`: Navigate to previous result
   - `↓`: Navigate to next result
+  - `Tab`: Restore last search query
 
-  ## Technologies
+## Technologies
 - JavaScript (ES6+)
 - HTML
 - CSS
@@ -43,14 +46,27 @@ A Chrome extension that enables quick and efficient searching through YouTube vi
 3. Type your search query and press Enter
 4. Use arrow keys to navigate through results or click directly on a result
 5. Press Enter or click to jump to the selected timestamp
+6. Click "Export Results" to save search results to a text file
 
 ## Technical Details
 
 ### Files Structure
-- `manifest.json`: Extension configuration and permissions
-- `content.js`: Main script for subtitle extraction and search functionality
-- `background.js`: Handles extension commands and initialization
-- `icon.png`: Extension icon
+```
+src/
+├── js/
+│   ├── components/
+│   │   ├── SearchBox.js    # Search input UI component
+│   │   └── Results.js      # Results display component
+│   ├── services/
+│   │   └── subtitleService.js  # Subtitle fetching and searching
+│   ├── utils/
+│   │   ├── helpers.js      # Utility functions
+│   │   └── themeManager.js # Theme management
+│   ├── content.js          # Main content script
+│   └── background.js       # Background service worker
+├── styles/                 # CSS styles (if needed)
+└── assets/                # Images and other assets
+```
 
 ### Permissions Required
 - `activeTab`: To interact with the current YouTube tab
@@ -97,6 +113,9 @@ If you encounter any issues or have suggestions for improvements, please open an
   - Basic subtitle search functionality
   - Keyboard navigation
   - Timestamp jumping
+  - Theme support
+  - Export functionality
+  - Modular code structure
 
 The activeTab permission is required to interact with the current YouTube video page. This allows the extension to:
 1. Read subtitle/caption data from the current video
